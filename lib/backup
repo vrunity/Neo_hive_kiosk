@@ -1,0 +1,149 @@
+Future<void> _fetchRemoteEvents() async {
+  try {
+    final uri = Uri.parse('https://esheapp.in/kiosk/events.json');
+    final httpClient = HttpClient();
+    final request = await httpClient.getUrl(uri);
+    final response = await request.close();
+
+    if (response.statusCode == 200) {
+      final responseBody = await response.transform(utf8.decoder).join();
+      final remoteJson = jsonDecode(responseBody);
+
+      print('Online fetched JSON from server: $remoteJson');
+
+      // Normalize events from online JSON (similar to local handling)
+      List<dynamic> rawEvents = remoteJson['events'] ?? [];
+      if (rawEvents is! List) {
+        print('Invalid events format from server');
+        return;
+      }
+
+      DateTime normalizeDate(DateTime date) => DateTime(date.year, date.month, date.day);
+
+      Map<DateTime, List<Map<String, dynamic>>> groupedEvents = {};
+
+      for (var event in rawEvents) {
+        if (event is! Map<String, dynamic>) continue;
+
+        final dateStr = event['date'] ?? '';
+        if (dateStr.isEmpty) continue;
+
+        final int daysDuration = (event['days_duration'] is int && event['days_duration'] > 0)
+            ? event['days_duration']
+            : 1;
+
+        DateTime startDate = DateTime.tryParse(dateStr) ?? DateTime.now();
+
+        // For each day in days_duration, clone event with updated date
+        for (int i = 0; i < daysDuration; i++) {
+          final dateToUse = normalizeDate(startDate.add(Duration(days: i)));
+
+          // Prepare slideshow items similar to your existing logic
+          List<Map<String, dynamic>> slideshowItems = [];
+
+          List imagesGroups = event['images'] ?? [];
+
+          for (var imageGroup in imagesGroups) {
+            int? folderNum;
+            final folderRaw = imageGroup['folder'];
+            if (folderRaw is int) {
+              folderNum = folderRaw;
+            } else if (folderRaw is String) {
+              folderNum = int.tryParse(folderRaw);
+            }
+            if (folderNum == null) continue;
+
+            String? folderName = folderNumberToName[folderNum];
+            if (folderName == null) continue;
+
+            // Get list of images for this folder
+            List<String> allImages = folderNum == 11
+                ? await listOthersFolderFiles()
+                : (assetFolders[folderName] ?? []);
+
+            List<dynamic> imgs = imageGroup['images'] ?? [];
+
+            bool isTemplate = imageGroup.containsKey('template') || imageGroup.containsKey('text');
+
+            if (isTemplate) {
+              final converted = await _convertImagesToTemplateData(imgs, folderNum);
+              if (converted['mediaPaths'] != null && (converted['mediaPaths'] as List).isNotEmpty) {
+                slideshowItems.add({
+                  'template': imageGroup['template'] ?? '',
+                  'mediaPaths': converted['mediaPaths'],
+                  'durations': converted['durations'],
+                  'text': imageGroup['text'] ?? '',
+                  'scrollingText': imageGroup['scrollingText'] ?? false,
+                });
+              }
+            } else {
+              for (var img in imgs) {
+                if (img is Map && img.isNotEmpty) {
+                  var entry = img.entries.first;
+
+                  int pos = 0;
+                  if (entry.key is int) {
+                    pos = entry.key as int;
+                  } else if (entry.key is String) {
+                    pos = int.tryParse(entry.key) ?? 0;
+                  }
+
+                  int duration = entry.value ?? 5;
+                  String imgPath = (pos > 0 && pos <= allImages.length) ? allImages[pos - 1] : '';
+                  if (imgPath.isEmpty) continue;
+
+                  slideshowItems.add({
+                    'path': imgPath,
+                    'name': imgPath.split(Platform.pathSeparator).last,
+                    'duration_seconds': duration,
+                    'folderNum': folderNum,
+                  });
+                }
+              }
+            }
+          }
+
+          // Add or merge with existing for the date
+          groupedEvents.update(dateToUse, (existing) {
+            existing.addAll(slideshowItems);
+            return existing;
+          }, ifAbsent: () => slideshowItems);
+        }
+      }
+
+      print('Loaded remote events keys: ${groupedEvents.keys.map((e) => e.toIso8601String())}');
+
+      setState(() {
+        events = groupedEvents;
+        // if (groupedEvents.isNotEmpty) {
+        //   _focusedDay = groupedEvents.keys.first;
+        // }
+      });
+
+      print('Loaded remote events into state.');
+
+      // Optionally save remote data locally to persist offline or caching
+      /*
+      final prefs = await SharedPreferences.getInstance();
+      final eventsListToSave = groupedEvents.entries.map((entry) {
+        return {
+          'date': entry.key.toIso8601String().split('T').first,
+          'images': entry.value,
+        };
+      }).toList();
+      final jsonToSave = jsonEncode({'events': eventsListToSave});
+      await prefs.setString('calendar_events', jsonToSave);
+      */
+
+    } else {
+      final responseBody = await response.transform(utf8.decoder).join();
+      print('Error response (${response.statusCode}): $responseBody');
+      throw Exception('Failed to load remote events: ${response.statusCode}');
+    }
+  } catch (e) {
+    print('Error fetching remote events: $e');
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Failed to load remote events: $e')),
+    );
+  }
+}

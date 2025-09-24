@@ -38,6 +38,13 @@ dependencies:
   mobile_scanner: ^7.0.1
   shared_preferences: ^2.5.3
   shelf: ^1.4.2
+  http: ^1.4.0
+  connectivity_plus: ^6.1.4
+  network_info_plus: ^6.1.4
+  path_provider: ^2.1.5
+  video_player: ^2.10.0
+  video_thumbnail: ^0.5.6
+  excel: ^4.0.6
 
 dev_dependencies:
   flutter_test:
@@ -67,15 +74,26 @@ flutter:
   #   - images/a_dot_ham.jpeg
   assets:
     - assets/Confined Space/
+    - assets/EOT Crane/
     - assets/First Aid/
     - assets/Forklift/
+    - assets/Hazards/
     - assets/Hight work/
-    - assets/Labours Day/
-    - assets/Material Handling/
+    - assets/Hot work/
+    - assets/Labours day/
+    - assets/Ladder safety/
+    - assets/Material handling/
     - assets/MSDS/
     - assets/Near misses/
+    - assets/Others/
     - assets/PPE/
-    - assets/Womens safety/
+    - assets/Scaffolding/
+    - assets/Unsafe act/
+    - assets/Women safety/
+    - assets/data/Thirukural.xlsx
+    - assets/data/thirukural_1.xlsx
+    - assets/backgrounds/dashboard.png
+    - assets/backgrounds/thirukural.png
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
 
