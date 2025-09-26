@@ -9,6 +9,7 @@ import 'package:network_info_plus/network_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 
+
 import 'qr_scanner_page.dart';
 import 'slideshow_page.dart';
 import 'kiosk_server.dart'; // your server class
@@ -1167,7 +1168,7 @@ class _CalendarKioskAppState extends State<CalendarKioskApp> {
             padding: const EdgeInsets.all(8.0),
             child: Column(
               children: [
-                _buildModeToggle(),
+                // _buildModeToggle(),
                 _buildThirukuralToggle(),
                 _safetyStatusRow(), // <--- add this line
                 TableCalendar(

@@ -2,29 +2,26 @@ import 'package:flutter/material.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'slideshow_page.dart';
 import 'calendar_kiosk_app.dart';
-import 'kiosk_server.dart';  // import your server here
+import 'kiosk_server.dart';
+import 'loading_page.dart'; // Import the new loading page
 
 final kioskServer = KioskServer();
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Check network connectivity before starting server
-  var connectivityResult = await Connectivity().checkConnectivity();
-  if (connectivityResult == ConnectivityResult.none) {
-    // No network, show error UI by running app with error widget
+  final net = await Connectivity().checkConnectivity();
+  if (net == ConnectivityResult.none) {
     runApp(const NoNetworkApp());
     return;
   }
 
   await kioskServer.start();
-
   runApp(const KioskAppRoot());
 }
 
 class NoNetworkApp extends StatelessWidget {
   const NoNetworkApp({super.key});
-
   @override
   Widget build(BuildContext context) {
     return const MaterialApp(
@@ -43,45 +40,50 @@ class NoNetworkApp extends StatelessWidget {
 
 class KioskAppRoot extends StatefulWidget {
   const KioskAppRoot({super.key});
-
   @override
   State<KioskAppRoot> createState() => _KioskAppRootState();
 }
 
 class _KioskAppRootState extends State<KioskAppRoot> {
-  List<Map<String, dynamic>> _todayImages = [];
-
-  @override
-  void initState() {
-    super.initState();
-    _loadTodayImages();
-  }
-
-  void _loadTodayImages() {
-    final todayStr = DateTime.now().toIso8601String().substring(0, 10);
-    List<Map<String, dynamic>> images = [];
-    for (int i = 1; i <= 5; i++) {
-      final path = 'assets/images/${todayStr}_$i.jpg';
-      images.add({
-        'path': path,
-        'name': 'Image $i',
-        'duration_seconds': 5,
-      });
-    }
-    setState(() {
-      _todayImages = images;
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: "Kiosk Slideshow",
+      title: 'Kiosk Slideshow',
       debugShowCheckedModeBanner: false,
+
+      // Start with the loading page
       initialRoute: '/',
+
       routes: {
-        '/': (context) => SlideshowPage(slidesOrImages: _todayImages),
+        '/': (context) => const SplashScreen(), // The new initial route
         '/calendar': (context) => const CalendarKioskApp(),
+      },
+
+      // Build slideshow from arguments pushed by Calendar page
+      onGenerateRoute: (settings) {
+        if (settings.name == '/kiosk') {
+          final args = (settings.arguments ?? {}) as Map;
+
+          final slidesOrImages =
+              (args['slidesOrImages'] as List<Map<String, dynamic>>?) ?? const [];
+
+          final showThirukural = (args['showThirukural'] as bool?) ?? false;
+          final thirukuralAssetPath =
+              (args['thirukuralAssetPath'] as String?) ?? 'assets/data/Thirukural.xlsx';
+          final thirukuralBackground =
+              (args['thirukuralBackground'] as String?) ?? 'assets/backgrounds/thirukural.png';
+
+          return MaterialPageRoute(
+            builder: (_) => SlideshowPage(
+              slidesOrImages: slidesOrImages,
+              showThirukural: showThirukural,
+              thirukuralAssetPath: thirukuralAssetPath,
+              thirukuralBackground: thirukuralBackground,
+            ),
+            settings: settings,
+          );
+        }
+        return null;
       },
     );
   }

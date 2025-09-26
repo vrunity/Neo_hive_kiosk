@@ -9,23 +9,30 @@ import 'package:video_thumbnail/video_thumbnail.dart';
 
 import 'services/thirukural_service.dart';
 
-/// -------- Responsive helpers (NEW) --------
+
+// =========================================================================
+// MODIFICATION: Updated Responsive helpers for large Kiosk screens.
+// - Changed `base` from 390 (mobile) to 1080 (portrait kiosk).
+// - Widened clamp range to allow for more significant scaling on 4K displays.
+// =========================================================================
 class RS {
   static Size size(BuildContext c) => MediaQuery.of(c).size;
   static double sw(BuildContext c, [double pct = 1]) => size(c).width * pct;
   static double sh(BuildContext c, [double pct = 1]) => size(c).height * pct;
 
-  /// Scale font by shortest side to keep balance across phone/TV.
-  /// Set `base` to your design reference device width/short side (e.g., 390).
-  static double sp(BuildContext c, double v, {double base = 390}) {
+  /// Scale font by shortest side.
+  /// `base` is now 1080, a common width for portrait HD/4K content.
+  static double sp(BuildContext c, double v, {double base = 1080}) {
     final s = size(c).shortestSide;
-    return v * (s / base).clamp(0.8, 2.0);
+    // Allow scaling up to 4x for high-res screens.
+    return v * (s / base).clamp(0.9, 4.0);
   }
 
-  /// Scale pixel offsets/padding by width (good for dx, dy, padding).
-  static double dp(BuildContext c, double v, {double base = 390}) {
+  /// Scale pixel offsets/padding by width.
+  static double dp(BuildContext c, double v, {double base = 1080}) {
     final w = size(c).width;
-    return v * (w / base).clamp(0.8, 2.5);
+    // Allow scaling up to 4x for high-res screens.
+    return v * (w / base).clamp(0.9, 4.0);
   }
 }
 
@@ -38,7 +45,7 @@ class AutoScrollingText extends StatefulWidget {
     Key? key,
     required this.text,
     this.style,
-    this.velocity = 50.0,
+    this.velocity = 100.0, // Increased default velocity for larger screens
   }) : super(key: key);
 
   @override
@@ -57,7 +64,7 @@ class SafetyDashboard extends StatelessWidget {
           'Safety Dashboard',
           style: Theme.of(context)
               .textTheme
-              .headlineMedium
+              .displaySmall // Use a larger theme style
               ?.copyWith(color: Colors.white),
         ),
       ),
@@ -91,6 +98,11 @@ class _AutoScrollingTextState extends State<AutoScrollingText>
     _textWidth = tp.size.width;
     _screenWidth = MediaQuery.of(context).size.width;
 
+    if (_textWidth <= _screenWidth) {
+      // No need to scroll if text fits
+      return;
+    }
+
     final total = _screenWidth + _textWidth;
     final duration =
     Duration(milliseconds: ((total / widget.velocity) * 1000).toInt());
@@ -108,8 +120,12 @@ class _AutoScrollingTextState extends State<AutoScrollingText>
 
   @override
   Widget build(BuildContext context) {
-    if (!_animationReady) {
-      return Text(widget.text, style: widget.style);
+    // If text fits or animation isn't ready, just display it centered.
+    if (!_animationReady || _textWidth <= _screenWidth) {
+      return SizedBox(
+        width: double.infinity,
+        child: Text(widget.text, style: widget.style, textAlign: TextAlign.center),
+      );
     }
     return ClipRect(
       child: SizedBox(
@@ -125,7 +141,7 @@ class _AutoScrollingTextState extends State<AutoScrollingText>
                 _screenWidth - (_controller.value * (_screenWidth + _textWidth));
             return Transform.translate(offset: Offset(x, 0), child: child);
           },
-          child: Text(widget.text, style: widget.style),
+          child: Text(widget.text, style: widget.style, maxLines: 1),
         ),
       ),
     );
@@ -312,7 +328,9 @@ class _SlideshowPageState extends State<SlideshowPage> {
 
       const thiruSeconds = 10;
 
-      // Optional bottom gradient panel (doesn't grey whole image)
+      // =================================================================
+      // MODIFICATION: Increased font sizes for kiosk readability.
+      // =================================================================
       final slide = {
         'template': 'kural-cells',
         'mediaPaths': widget.thirukuralBackground != null
@@ -327,74 +345,65 @@ class _SlideshowPageState extends State<SlideshowPage> {
             'text': entry.title,
             'align': 'topCenter',
             'dx': 0,
-            'dy': 320,
+            'dy': 30, // More space from top
             'widthPct': 0.92,
-            'fontSize': 22,
+            'fontSize': 42, // Increased
             'weight': 'w700',
             'textAlign': 'center',
-            'color': '#000000',
-            'shadow': false,
-            'lineHeight': 1.25,
+            'color': '#FFFFFF',
+            'shadow': true,
           },
           {
             'text': l1,
             'align': 'center',
             'dx': 0,
-            'dy': -20,
+            'dy': -40, // Adjusted
             'widthPct': 0.96,
-            'fontSize': 13,
-            'autoFontMin': 10,
-            'autoFontMax': 14,
-            'maxLines': 1,
+            'fontSize': 36, // Increased
             'weight': 'w900',
             'textAlign': 'center',
-            'color': '#000000',
-            'shadow': false,
-            'lineHeight': 1.15,
+            'color': '#FFFFFF',
+            'shadow': true,
           },
           {
             'text': l2,
             'align': 'center',
             'dx': 0,
-            'dy': 10,
+            'dy': 40, // Adjusted
             'widthPct': 0.96,
-            'fontSize': 14,
-            'autoFontMin': 10,
-            'autoFontMax': 15,
-            'maxLines': 1,
+            'fontSize': 36, // Increased
             'weight': 'w900',
             'textAlign': 'center',
-            'color': '#000000',
-            'shadow': false,
-            'lineHeight': 1.15,
+            'color': '#FFFFFF',
+            'shadow': true,
           },
           {
             'text': entry.tamilMeaning,
             'align': 'bottomCenter',
             'dx': 0,
-            'dy': -250,
-            'widthPct': 0.80,
-            'fontSize': 15,
+            'dy': -250, // Adjusted for larger fonts
+            'widthPct': 0.85,
+            'fontSize': 32, // Increased
             'weight': 'w600',
             'textAlign': 'justify',
-            'color': '#000000',
-            'shadow': false,
-            'lineHeight': 1.35,
+            'color': '#FFFFFF',
+            'shadow': true,
+            'lineHeight': 1.4,
             'maxLines': 10,
           },
           {
             'text': entry.englishMeaning,
             'align': 'bottomCenter',
-            'dx': 16,
-            'dy': -150,
+            'dx': 0,
+            'dy': -100, // Adjusted
             'widthPct': 0.90,
-            'fontSize': 15,
+            'fontSize': 30, // Increased
             'weight': 'w600',
             'textAlign': 'justify',
-            'color': '#000000',
-            'shadow': false,
-            'lineHeight': 1.35,
-            'maxLines': 3,
+            'color': '#FFFFFF',
+            'shadow': true,
+            'lineHeight': 1.4,
+            'maxLines': 4,
           },
         ],
       };
@@ -534,71 +543,54 @@ class _SlideshowPageState extends State<SlideshowPage> {
   }
 
   /// Centralized media builder.
-  /// - Non-fullscreen uses BoxFit.cover (keep your previous behavior).
-  /// - Fullscreen can choose `fit` (use `BoxFit.contain` to avoid cropping).
+  /// Handles fullscreen aspect ratio enforcement.
   Widget _buildMediaWidget(
       String path,
       int folderNum, {
-        bool fullscreen = false,
         BoxFit fit = BoxFit.cover,
       }) {
-// VIDEO
+    // VIDEO
     if (isVideoFile(path)) {
       final c = _videoController;
-      // Render as soon as controller is initialized — do NOT gate on dataSource equality
-      if (c != null && c.value.isInitialized) {
-        final ar = c.value.aspectRatio > 0 ? c.value.aspectRatio : (16 / 9);
-
-        // Robust on TVs: always use AspectRatio -> VideoPlayer
-        final video = AspectRatio(
-          aspectRatio: ar,
-          child: VideoPlayer(
-            c,
-            key: ValueKey<String>(_currentVideoPath ?? ''), // force rebuild on source change
+      if (c != null && c.value.isInitialized && c.value.size.width > 0 && c.value.size.height > 0) {
+        return FittedBox(
+          fit: fit,
+          child: SizedBox(
+            width: c.value.size.width,
+            height: c.value.size.height,
+            child: VideoPlayer(
+              c,
+              key: ValueKey<String>(_currentVideoPath ?? ''),
+            ),
           ),
         );
-
-        if (fullscreen) {
-          // Keep fullscreen behavior selectable via `fit`
-          // Wrap in FittedBox only around the AspectRatio (texture-safe).
-          return FittedBox(
-            fit: fit, // cover = edge-to-edge, contain = show all
-            child: SizedBox(
-              width: c.value.size.width == 0 ? 1 : c.value.size.width,
-              height: c.value.size.height == 0 ? 1 : c.value.size.height,
-              child: video,
-            ),
-          );
-        }
-
-        return video;
       }
       return const Center(child: CircularProgressIndicator());
     }
 
     // IMAGE
-    final imgFit = fullscreen ? fit : BoxFit.cover;
-
+    Widget imageWidget;
     if (_isNetwork(path)) {
-      return Image.network(
+      imageWidget = Image.network(
         path,
-        fit: imgFit,
+        fit: fit,
         gaplessPlayback: true,
         errorBuilder: (_, __, ___) => const Icon(Icons.broken_image, size: 120),
       );
     } else if (folderNum == 11 || File(path).isAbsolute) {
-      return Image.file(
+      imageWidget = Image.file(
         File(path),
-        fit: imgFit,
+        fit: fit,
         errorBuilder: (_, __, ___) => const Icon(Icons.broken_image, size: 120),
       );
     } else {
-      return Image.asset(
+      imageWidget = Image.asset(
         path,
-        fit: imgFit,
+        fit: fit,
         errorBuilder: (_, __, ___) => const Icon(Icons.broken_image, size: 120),
       );
     }
+    return imageWidget;
   }
 
   Future<Widget> _buildThumbnail(String path, int folderNum) async {
@@ -648,6 +640,7 @@ class _SlideshowPageState extends State<SlideshowPage> {
   // ---------- build ----------
   @override
   Widget build(BuildContext context) {
+    // Force text scale to 1.0 to prevent OS-level font size changes
     final normalized = MediaQuery.of(context).copyWith(textScaleFactor: 1.0);
     return MediaQuery(
       data: normalized,
@@ -655,8 +648,27 @@ class _SlideshowPageState extends State<SlideshowPage> {
         builder: (context) {
           if (_slides.isEmpty) {
             return Scaffold(
-              appBar: AppBar(title: const Text('Kiosk Slideshow')),
-              body: const Center(child: Text('No images for today.')),
+              appBar: AppBar(
+                title: const Text('Kiosk Slideshow'),
+                actions: [
+                  IconButton(
+                    icon: const Icon(Icons.calendar_today),
+                    tooltip: 'Go to Calendar',
+                    onPressed: () async {
+                      await _cancelSlideshow();
+                      if (!mounted) return;
+                      await Navigator.of(context).pushNamed('/calendar');
+                    },
+                  ),
+                ],
+              ),
+              body: const Center(
+                child: Text(
+                  'No events scheduled for today.',
+                  style: TextStyle(fontSize: 32, color: Colors.grey),
+                  textAlign: TextAlign.center,
+                ),
+              ),
             );
           }
 
@@ -683,39 +695,43 @@ class _SlideshowPageState extends State<SlideshowPage> {
 
     Widget mediaWidget;
 
-    // Safety Dashboard full-screen slide
     if (template == 'safety-dashboard') {
       mediaWidget = const SizedBox.expand(child: SafetyDashboard());
     } else if (template == '70image30text' || template == '70image30scrolltext') {
+      // =================================================================
+      // MODIFICATION: Changed flex factors for better vertical balance
+      // and increased font size and padding.
+      // =================================================================
       mediaWidget = SizedBox(
         height: MediaQuery.of(context).size.height,
         child: Column(
           children: [
             Expanded(
-              flex: 7,
+              flex: 8, // Gave more space to the image
               child: mediaPaths.isNotEmpty
-                  ? AspectRatio(
-                aspectRatio: 16 / 9,
-                child: _buildMediaWidget(mediaPaths[0], folderNum),
+                  ? SizedBox.expand( // Ensure it fills the space
+                child: _buildMediaWidget(mediaPaths[0], folderNum, fit: BoxFit.fill),
               )
                   : Container(color: Colors.grey),
             ),
             Expanded(
-              flex: 3,
+              flex: 2, // Gave more space to the text panel
               child: Container(
                 color: Colors.black87,
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                 width: double.infinity,
+                alignment: Alignment.center,
                 child: scrolling
                     ? AutoScrollingText(
                   text: text,
-                  style:
-                  const TextStyle(color: Colors.white, fontSize: 18),
-                  velocity: 100.0,
+                  style: TextStyle(color: Colors.white, fontSize: RS.sp(context, 36)),
+                  velocity: 120.0,
                 )
-                    : Text(text,
-                    style: const TextStyle(
-                        color: Colors.white, fontSize: 18)),
+                    : Text(
+                  text,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.white, fontSize: RS.sp(context, 36)),
+                ),
               ),
             ),
           ],
@@ -726,22 +742,20 @@ class _SlideshowPageState extends State<SlideshowPage> {
         children: [
           Expanded(
             child: mediaPaths.isNotEmpty
-                ? _buildMediaWidget(mediaPaths[0], folderNum)
+                ? _buildMediaWidget(mediaPaths[0], folderNum, fit: BoxFit.cover)
                 : Container(color: Colors.grey),
           ),
           Expanded(
             child: mediaPaths.length > 1
-                ? _buildMediaWidget(mediaPaths[1], folderNum)
+                ? _buildMediaWidget(mediaPaths[1], folderNum, fit: BoxFit.cover)
                 : Container(color: Colors.grey),
           ),
         ],
       );
     } else if (template == 'kural-overlay') {
-      // Background + single overlay text (compat)
       final overlay = (slide['overlay'] as Map<String, dynamic>?) ?? {};
       final align = _toAlignment((overlay['align'] ?? 'center') as String);
 
-// NEW: support percent-based offsets if provided; otherwise scale absolute.
       final dxPctRaw = overlay['dxPct'] as num?;
       final dyPctRaw = overlay['dyPct'] as num?;
       final dxAbs = ((overlay['dx'] ?? 0) as num).toDouble();
@@ -751,11 +765,13 @@ class _SlideshowPageState extends State<SlideshowPage> {
       final dy = dyPctRaw != null ? RS.sh(context, dyPctRaw.toDouble())
           : RS.dp(context, dyAbs);
 
-// NEW: responsive padding & font size
-      final pad = RS.dp(context, ((overlay['padding'] ?? 24) as num).toDouble());
+      final pad = RS.dp(context, ((overlay['padding'] ?? 48) as num).toDouble()); // Increased padding
       final maxWidthPct =
       ((overlay['maxWidthPct'] ?? 0.92) as num).toDouble().clamp(0.0, 1.0);
-      final fontSize = RS.sp(context, ((overlay['fontSize'] ?? 28) as num).toDouble());
+      // =================================================================
+      // MODIFICATION: Increased base font size for the overlay.
+      // =================================================================
+      final fontSize = RS.sp(context, ((overlay['fontSize'] ?? 56) as num).toDouble());
 
       final color = _hexToColor((overlay['color'] ?? '#FFFFFF') as String);
       final shadow = (overlay['shadow'] ?? true) as bool;
@@ -771,7 +787,7 @@ class _SlideshowPageState extends State<SlideshowPage> {
             children: [
               Positioned.fill(
                 child: mediaPaths.isNotEmpty
-                    ? _buildMediaWidget(mediaPaths[0], folderNum)
+                    ? _buildMediaWidget(mediaPaths[0], folderNum, fit: BoxFit.cover)
                     : Container(color: Colors.black),
               ),
               if (dim > 0)
@@ -795,14 +811,14 @@ class _SlideshowPageState extends State<SlideshowPage> {
                           style: TextStyle(
                             color: color,
                             fontSize: fontSize,
-                            height: 1.35,
-                            fontWeight: FontWeight.w600,
+                            height: 1.4, // Increased line height
+                            fontWeight: FontWeight.bold, // Bolder
                             shadows: shadow
                                 ? const [
                               Shadow(
-                                  blurRadius: 8,
-                                  color: Colors.black54,
-                                  offset: Offset(0, 2)),
+                                  blurRadius: 12, // Stronger shadow
+                                  color: Colors.black87,
+                                  offset: Offset(2, 2)),
                             ]
                                 : null,
                           ),
@@ -832,35 +848,18 @@ class _SlideshowPageState extends State<SlideshowPage> {
           children.add(
             Positioned.fill(
               child: mediaPaths.isNotEmpty
-                  ? _buildMediaWidget(mediaPaths[0], folderNum)
+                  ? _buildMediaWidget(mediaPaths[0], folderNum, fit: BoxFit.cover)
                   : Container(color: Colors.black),
             ),
           );
 
-          // Optional: bottom gradient panel for readability
-          if (dim > 0 && panelHeightPct > 0) {
-            children.add(
-              Positioned(
-                left: 0,
-                right: 0,
-                bottom: 0,
-                height: constraints.maxHeight * panelHeightPct,
+          // Optional: full-screen dim instead of gradient
+          if (dim > 0) {
+            children.add(Positioned.fill(
                 child: IgnorePointer(
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Colors.transparent,
-                          Colors.black.withOpacity(dim)
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            );
+                    child: Container(color: Colors.black.withOpacity(dim))
+                )
+            ));
           }
 
           // Text cells
@@ -870,7 +869,6 @@ class _SlideshowPageState extends State<SlideshowPage> {
 
             final align = _toAlignment((cell['align'] ?? 'center') as String);
 
-// NEW: support percent-based offsets; scale absolute if provided instead.
             final dxPctRaw = cell['dxPct'] as num?;
             final dyPctRaw = cell['dyPct'] as num?;
             final dxAbs = ((cell['dx'] ?? 0) as num).toDouble();
@@ -891,8 +889,9 @@ class _SlideshowPageState extends State<SlideshowPage> {
             final w = widthPx ?? (constraints.maxWidth * widthPct);
             final h = heightPx ?? (heightPct > 0 ? constraints.maxHeight * heightPct : null);
 
-// NEW: responsive padding & font size
-            final pad = RS.dp(context, ((cell['padding'] ?? 0) as num).toDouble());
+            final pad = RS.dp(context, ((cell['padding'] ?? 16) as num).toDouble());
+            // Font sizes are now taken directly from the map, allowing per-cell control.
+            // The values were increased in the _maybeInjectThirukuralSlide method.
             final fontSize = RS.sp(context, ((cell['fontSize'] ?? 28) as num).toDouble());
 
             final weight = _toFontWeight(cell['weight']);
@@ -930,9 +929,9 @@ class _SlideshowPageState extends State<SlideshowPage> {
                               shadows: shadow
                                   ? const [
                                 Shadow(
-                                    blurRadius: 8,
-                                    color: Colors.black54,
-                                    offset: Offset(0, 2)),
+                                    blurRadius: 10,
+                                    color: Colors.black87,
+                                    offset: Offset(2, 2)),
                               ]
                                   : null,
                             ),
@@ -961,23 +960,26 @@ class _SlideshowPageState extends State<SlideshowPage> {
       final scrolling = slide['scrollingText'] == true;
       final text = (slide['text'] ?? '').toString();
 
+      // =================================================================
+      // MODIFICATION: Increased font size for dashboard text.
+      // =================================================================
       final textWidget = scrolling
           ? AutoScrollingText(
         text: text,
         style: TextStyle(
           color: Colors.white,
-          fontSize: RS.sp(context, 16),
-          height: 1.3,
+          fontSize: RS.sp(context, 32),
+          height: 1.4,
         ),
-        velocity: 80,
+        velocity: 100,
       )
           : SingleChildScrollView(
         child: Text(
           text,
           style: TextStyle(
             color: Colors.white,
-            fontSize: RS.sp(context, 16),
-            height: 1.3,
+            fontSize: RS.sp(context, 32),
+            height: 1.4,
           ),
         ),
       );
@@ -989,7 +991,6 @@ class _SlideshowPageState extends State<SlideshowPage> {
             child: _buildMediaWidget(
               bgPath,
               slide['folderNum'] ?? 0,
-              fullscreen: _isFullscreen,
               fit: BoxFit.cover,
             ),
           ),
@@ -1000,11 +1001,11 @@ class _SlideshowPageState extends State<SlideshowPage> {
               child: Container
                 ( // panel
                 width: RS.sw(context, 0.45),
-                margin: EdgeInsets.all(RS.dp(context, 16)),
-                padding: EdgeInsets.all(RS.dp(context, 16)),
+                margin: EdgeInsets.all(RS.dp(context, 32)),
+                padding: EdgeInsets.all(RS.dp(context, 32)),
                 decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.55),
-                  borderRadius: BorderRadius.circular(12),
+                  color: Colors.black.withOpacity(0.65), // Slightly more opaque
+                  borderRadius: BorderRadius.circular(24),
                 ),
                 child: textWidget,
               ),
@@ -1035,7 +1036,7 @@ class _SlideshowPageState extends State<SlideshowPage> {
             icon: const Icon(Icons.calendar_today),
             tooltip: 'Go to Calendar',
             onPressed: () async {
-              await _cancelSlideshow();             // NEW: stop loop + video
+              await _cancelSlideshow();
               if (!mounted) return;
               await Navigator.of(context).pushNamed('/calendar');
             },
@@ -1067,15 +1068,11 @@ class _SlideshowPageState extends State<SlideshowPage> {
         body: GestureDetector(
           onTap: _handleFullscreenToggle,
           onDoubleTap: () => Navigator.of(context).maybePop(),
-          child: ColoredBox(
-            color: Colors.black,        // ensures top/bottom bars are black
-            child: Center(
-              child: _buildMediaWidget(
-                path,
-                folderNum,
-                fullscreen: true,
-                fit: BoxFit.contain,     // show full image/video (no crop)
-              ),
+          child: SizedBox.expand(
+            child: _buildMediaWidget(
+              path,
+              folderNum,
+              fit: BoxFit.cover, // Ensures image covers the entire screen
             ),
           ),
         ),
@@ -1091,7 +1088,7 @@ class _SlideshowPageState extends State<SlideshowPage> {
             icon: const Icon(Icons.calendar_today),
             tooltip: 'Go to Calendar',
             onPressed: () async {
-              await _cancelSlideshow();             // NEW: stop loop + video
+              await _cancelSlideshow();
               if (!mounted) return;
               await Navigator.of(context).pushNamed('/calendar');
             },
@@ -1111,15 +1108,17 @@ class _SlideshowPageState extends State<SlideshowPage> {
             children: [
               Expanded(
                 child: Padding(
-                  padding: const EdgeInsets.all(12.0),
-                  child: _buildMediaWidget(path, folderNum),
+                  padding: const EdgeInsets.all(24.0), // Increased padding
+                  child: _buildMediaWidget(path, folderNum, fit: BoxFit.contain), // Shows full image
                 ),
               ),
-              Text(
-                media['name'] ?? '',
-                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 20.0),
+                child: Text(
+                  media['name'] ?? '',
+                  style: TextStyle(fontSize: RS.sp(context, 40), fontWeight: FontWeight.bold),
+                ),
               ),
-              const SizedBox(height: 10),
               const SizedBox(height: 30),
             ],
           ),
